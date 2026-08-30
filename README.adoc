@@ -1,6 +1,4 @@
-= RELP Flooder library rlp_10
-
-Standalone version of https://github.com/teragrep/rlp_09[rlp_09]
+= Teragrep performance test application for RELP rlp_10
 
 == Features
 
