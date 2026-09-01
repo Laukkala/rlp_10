@@ -1,6 +1,6 @@
 /*
- * Teragrep RELP Flooder Client RLP_10
- * Copyright (C) 2024  Suomen Kanuuna Oy
+ * Teragrep performance test application for RELP (rlp_10)
+ * Copyright (C) 2026 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://github.com/teragrep/teragrep/blob/main/LICENSE>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Additional permission under GNU Affero General Public License version 3
@@ -43,30 +43,49 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-
 package com.teragrep.rlp_10;
 
-class FlooderConfig {
-    public final String hostname;
-    public final String appname;
-    public final String target;
-    public final int port;
-    public final int threads;
-    public final boolean useTls;
-    public final int payloadSize;
-    public final int reportInterval;
-    public final long maxMessagesSent;
-    public final boolean usePerThreadIterator;
-    public FlooderConfig() {
-        this.hostname = System.getProperty("hostname", "localhost");
-        this.appname = System.getProperty("appname", "rlp_10");
-        this.target = System.getProperty("target", "127.0.0.1");
-        this.port = Integer.parseInt(System.getProperty("port", "1601"));
-        this.threads = Integer.parseInt(System.getProperty("threads", "4"));
-        this.useTls = Boolean.parseBoolean(System.getProperty("useTls", "false"));
-        this.payloadSize = Integer.parseInt(System.getProperty("payloadSize", "10"));
-        this.reportInterval = Integer.parseInt(System.getProperty("reportInterval", "10"));
-        this.maxMessagesSent = Long.parseLong(System.getProperty("maxMessagesSent", "-1"));
-        this.usePerThreadIterator = Boolean.parseBoolean(System.getProperty("usePerThreadIterator", "true"));
+import com.teragrep.rlo_14.Facility;
+import com.teragrep.rlo_14.Severity;
+import com.teragrep.rlo_14.SyslogMessage;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
+class RecordStreamImpl implements RecordStream {
+
+    private final String origin;
+    private final String hostname;
+    private final String appname;
+
+    public RecordStreamImpl(final String origin, final String hostname, final String appname) {
+        this.origin = origin;
+        this.hostname = hostname;
+        this.appname = appname;
     }
+
+    @Override
+    public byte[] get() {
+        // todo return stub if recordConfig amount is consumed and check stubs in send
+
+        final Instant timestamp = Instant.now();
+        final String timestampString = timestamp.getEpochSecond() + "." + timestamp.getNano();
+        final JsonObject record = Json
+                .createObjectBuilder()
+                .add("origin", origin)
+                .add("timestamp", timestampString)
+                .build();
+        return new SyslogMessage()
+                .withTimestamp(timestamp.toEpochMilli())
+                .withAppName(appname)
+                .withHostname(hostname)
+                .withFacility(Facility.USER)
+                .withSeverity(Severity.INFORMATIONAL)
+                .withMsg(record.toString())
+                .toRfc5424SyslogMessage()
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
 }

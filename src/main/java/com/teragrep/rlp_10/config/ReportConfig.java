@@ -1,6 +1,6 @@
 /*
- * Teragrep RELP Flooder Client RLP_10
- * Copyright (C) 2024  Suomen Kanuuna Oy
+ * Teragrep performance test application for RELP (rlp_10)
+ * Copyright (C) 2026 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://github.com/teragrep/teragrep/blob/main/LICENSE>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Additional permission under GNU Affero General Public License version 3
@@ -43,50 +43,14 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
+package com.teragrep.rlp_10.config;
 
-package com.teragrep.rlp_10;
+public class ReportConfig {
 
-import com.teragrep.rlo_14.Facility;
-import com.teragrep.rlo_14.Severity;
-import com.teragrep.rlo_14.SyslogMessage;
+    private final long interval;
 
-import java.time.Instant;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
-
-class SharedTotalMessageIterator implements Iterator<byte[]> {
-    private final AtomicInteger recordsSent;
-    private final FlooderConfig flooderConfig;
-    private final String padding;
-    private final int threadId;
-    private int currentId;
-    public SharedTotalMessageIterator(FlooderConfig flooderConfig, int threadId, AtomicInteger recordsSent) {
-        this.recordsSent = recordsSent;
-        this.flooderConfig = flooderConfig;
-        this.padding = new String(new char[flooderConfig.payloadSize]).replace("\0", "X");
-        this.threadId = threadId;
+    public ReportConfig(final long interval) {
+        this.interval = interval;
     }
 
-    private String createMessage() {
-        return String.format("Thread %s - message %s, padding: %s", threadId, currentId, padding);
-    }
-
-    @Override
-    public boolean hasNext() {
-        currentId = recordsSent.incrementAndGet();
-        return flooderConfig.maxMessagesSent <= -1 || currentId<=flooderConfig.maxMessagesSent;
-    }
-
-    @Override
-    public byte[] next() {
-        return new SyslogMessage()
-                .withTimestamp(Instant.now().toEpochMilli())
-                .withAppName(flooderConfig.appname)
-                .withHostname(flooderConfig.hostname)
-                .withFacility(Facility.USER)
-                .withSeverity(Severity.INFORMATIONAL)
-                .withMsg(createMessage())
-                .toRfc5424SyslogMessage()
-                .getBytes();
-    }
 }

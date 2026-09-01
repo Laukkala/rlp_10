@@ -1,6 +1,6 @@
 /*
- * Teragrep RELP Flooder Client RLP_10
- * Copyright (C) 2024  Suomen Kanuuna Oy
+ * Teragrep performance test application for RELP (rlp_10)
+ * Copyright (C) 2026 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://github.com/teragrep/teragrep/blob/main/LICENSE>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *
  * Additional permission under GNU Affero General Public License version 3
@@ -43,47 +43,24 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-
 package com.teragrep.rlp_10;
 
-import com.teragrep.rlo_14.Facility;
-import com.teragrep.rlo_14.Severity;
-import com.teragrep.rlo_14.SyslogMessage;
+import java.util.concurrent.locks.LockSupport;
 
-import java.time.Instant;
-import java.util.Iterator;
+class RecordStreamDelay implements RecordStream {
 
-class PerThreadMessageIterator implements Iterator<byte[]> {
-    private int current=0;
-    private final FlooderConfig flooderConfig;
-    private final String padding;
-    private final int threadId;
-    public PerThreadMessageIterator(FlooderConfig flooderConfig, int threadId) {
-        this.flooderConfig = flooderConfig;
-        this.padding = new String(new char[flooderConfig.payloadSize]).replace("\0", "X");
-        this.threadId = threadId;
-    }
+    private final RecordStream recordStream;
+    private final long delay;
 
-    private String createMessage() {
-        current++;
-        return String.format("Thread %s - message %s, padding: %s", threadId, current, padding);
+    public RecordStreamDelay(final long delay, RecordStream recordStream) {
+        this.delay = delay;
+        this.recordStream = recordStream;
     }
 
     @Override
-    public boolean hasNext() {
-        return flooderConfig.maxMessagesSent <= -1 || current<flooderConfig.maxMessagesSent;
+    public byte[] get() {
+        LockSupport.parkNanos(delay);
+        return recordStream.get();
     }
 
-    @Override
-    public byte[] next() {
-        return new SyslogMessage()
-                .withTimestamp(Instant.now().toEpochMilli())
-                .withAppName(flooderConfig.appname)
-                .withHostname(flooderConfig.hostname)
-                .withFacility(Facility.USER)
-                .withSeverity(Severity.INFORMATIONAL)
-                .withMsg(createMessage())
-                .toRfc5424SyslogMessage()
-                .getBytes();
-    }
 }
