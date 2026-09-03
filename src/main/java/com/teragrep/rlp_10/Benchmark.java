@@ -65,9 +65,11 @@ public class Benchmark {
 
     private final String host;
     private final int port;
+    private final ExecutorService executorService;
     public Benchmark(String hostName, int port){
         this.host = hostName;
         this.port = port;
+        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     public void startBenchmark() {
@@ -76,12 +78,11 @@ public class Benchmark {
 
         List<Initiator> initiators = new ArrayList<>(initiatorConfig.count());
 
-        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
-
         // eventloop threads
         EventLoopFactory eventLoopFactory = new EventLoopFactory();
         try {
             EventLoop eventLoop = eventLoopFactory.create();
+            executorService.submit(eventLoop);
 
             SocketFactory socketFactory = new PlainFactory();
 
