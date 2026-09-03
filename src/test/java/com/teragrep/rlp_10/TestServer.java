@@ -19,16 +19,14 @@ package com.teragrep.rlp_10;
 import com.teragrep.net_01.channel.socket.PlainFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
-import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.net_01.server.ServerFactory;
+import com.teragrep.rlp_10.config.SocketAddressConfig;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -42,17 +40,17 @@ public class TestServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestServer.class);
 
-    private final String hostname = "localhost";
     private EventLoop eventLoop;
     private Thread eventLoopThread;
 
     private ExecutorService executorService;
-    private final int port = 1236;
 
     private final List<byte[]> messageList = new LinkedList<>();
 
     @BeforeAll
     public void init() {
+        SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
+
         EventLoopFactory eventLoopFactory = new EventLoopFactory();
         Assertions.assertDoesNotThrow(() -> eventLoop = eventLoopFactory.create());
 
@@ -66,7 +64,7 @@ public class TestServer {
                 new PlainFactory(),
                 new FrameDelegationClockFactory(() -> new DefaultFrameDelegate((frame) -> messageList.add(frame.relpFrame().payload().toBytes())))
         );
-        Assertions.assertDoesNotThrow(() -> serverFactory.create(port));
+        Assertions.assertDoesNotThrow(() -> serverFactory.create(socketAddressConfig.port()));
     }
 
     @AfterAll
@@ -84,7 +82,11 @@ public class TestServer {
 
     @Test
     public void testBenchmark() {
-        Benchmark benchmark = new Benchmark(hostname, port);
-        benchmark.startBenchmark();
+        Assertions.assertTrue(messageList.isEmpty());
+        Benchmark benchmark = new Benchmark();
+        Assertions.assertDoesNotThrow(()->new Thread(benchmark::startBenchmark).start());
+        Assertions.assertDoesNotThrow(()->Thread.sleep(7000));
+        Assertions.assertFalse(messageList.isEmpty());
+        System.out.println(messageList.size());
     }
 }

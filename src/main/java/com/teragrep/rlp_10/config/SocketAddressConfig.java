@@ -48,11 +48,23 @@ package com.teragrep.rlp_10.config;
 public class SocketAddressConfig {
 
     private final String hostname;
-    private final String port;
+    private final int port;
 
-    public SocketAddressConfig(final String hostname, final String port) {
+    public SocketAddressConfig(){
+        this("localhost", 1601);
+    }
+
+    public SocketAddressConfig(final String hostname, final int port) {
         this.hostname = hostname;
         this.port = port;
+    }
+
+    public String hostname(){
+        return hostname;
+    }
+
+    public int port(){
+        return port;
     }
 
 }

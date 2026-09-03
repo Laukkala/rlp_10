@@ -23,7 +23,7 @@ class Initiator implements Runnable {
 
     private volatile boolean run = true;
 
-
+    //TODO: All initiators are currently in one eventLoop, allow for multiples.
     public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream) {
         this(relpClientFactory, recordStream, "localhost",1601);
     }

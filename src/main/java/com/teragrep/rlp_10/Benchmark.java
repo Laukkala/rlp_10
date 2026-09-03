@@ -53,6 +53,7 @@ import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.rlp_03.client.RelpClientFactory;
 import com.teragrep.rlp_10.config.DelayConfig;
 import com.teragrep.rlp_10.config.InitiatorConfig;
+import com.teragrep.rlp_10.config.SocketAddressConfig;
 import com.teragrep.rlp_10.config.SyslogConfig;
 
 import java.util.ArrayList;
@@ -63,20 +64,17 @@ import java.util.concurrent.locks.LockSupport;
 
 public class Benchmark {
 
-    private final String host;
-    private final int port;
     private final ExecutorService executorService;
-    public Benchmark(String hostName, int port){
-        this.host = hostName;
-        this.port = port;
+    public Benchmark(){
         this.executorService = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     public void startBenchmark() {
         // todo configs
         InitiatorConfig initiatorConfig = new InitiatorConfig();
-
         List<Initiator> initiators = new ArrayList<>(initiatorConfig.count());
+
+        SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
         // eventloop threads
         EventLoopFactory eventLoopFactory = new EventLoopFactory();
@@ -109,14 +107,14 @@ public class Benchmark {
             }
 
             for (int initiatorCount = 0; initiatorCount < initiatorConfig.count(); initiatorCount++) {
-                Initiator initiator = new Initiator(relpClientFactory, delayedStream, host, port);
+                Initiator initiator = new Initiator(relpClientFactory, delayedStream, socketAddressConfig.hostname(), socketAddressConfig.port());
                 executorService.submit(initiator);
                 initiators.add(initiator);
             }
 
             // todo proper shutdown criteria. i.e. shutdown hook for ^C or count depleted
 
-            LockSupport.parkNanos(Long.MAX_VALUE);
+            //LockSupport.parkNanos(Long.MAX_VALUE);
         }
         catch (Exception ignored) {
             // todo handle properly
