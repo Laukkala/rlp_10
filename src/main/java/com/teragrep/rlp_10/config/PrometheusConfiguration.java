@@ -1,6 +1,6 @@
 /*
- * RELP Commit Latency Probe RLP-11
- * Copyright (C) 2024 Suomen Kanuuna Oy
+ * Teragrep performance test application for RELP (rlp_10)
+ * Copyright (C) 2026 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -45,16 +45,16 @@
  */
 package com.teragrep.rlp_10.config;
 
-
 import com.teragrep.rlp_10.exception.ConfigurationException;
 
 public class PrometheusConfiguration {
 
     private final int port;
 
-    public PrometheusConfiguration(){
+    public PrometheusConfiguration() {
         this(8080);
     }
+
     public PrometheusConfiguration(final int port) {
         this.port = port;
     }
@@ -62,7 +62,8 @@ public class PrometheusConfiguration {
     public int port() {
         if (port < 1 || port > 65535) {
             throw new ConfigurationException("Prometheus port is not within expected range!");
-        } else {
+        }
+        else {
             return port;
         }
     }

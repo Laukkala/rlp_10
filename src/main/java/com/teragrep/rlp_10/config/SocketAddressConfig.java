@@ -50,7 +50,7 @@ public class SocketAddressConfig {
     private final String hostname;
     private final int port;
 
-    public SocketAddressConfig(){
+    public SocketAddressConfig() {
         this("localhost", 1601);
     }
 
@@ -59,11 +59,11 @@ public class SocketAddressConfig {
         this.port = port;
     }
 
-    public String hostname(){
+    public String hostname() {
         return hostname;
     }
 
-    public int port(){
+    public int port() {
         return port;
     }
 

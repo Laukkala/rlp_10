@@ -60,7 +60,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.LockSupport;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -72,11 +71,11 @@ public class Benchmark {
     private final InitiatorConfig initiatorConfig;
     private final List<Initiator> initiators;
 
-    public Benchmark(){
+    public Benchmark() {
         this(new InitiatorConfig(), new MetricsConfiguration());
     }
 
-    public Benchmark(InitiatorConfig initiatorConfig, MetricsConfiguration metricsConfiguration){
+    public Benchmark(InitiatorConfig initiatorConfig, MetricsConfiguration metricsConfiguration) {
         this.metricRegistry = new MetricRegistry();
         this.initiatorConfig = initiatorConfig;
         this.executorService = Executors.newVirtualThreadPerTaskExecutor();
@@ -93,8 +92,10 @@ public class Benchmark {
         metricRegistry.counter(name(Benchmark.class, "connects"));
         metricRegistry.counter(name(Benchmark.class, "disconnects"));
         metricRegistry.counter(name(Benchmark.class, "retriedConnects"));
-        metricRegistry.timer(name(Benchmark.class, "sendLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
-        metricRegistry.timer(name(Benchmark.class, "connectLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
+        metricRegistry
+                .timer(name(Benchmark.class, "sendLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
+        metricRegistry
+                .timer(name(Benchmark.class, "connectLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
 
         SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
@@ -129,7 +130,13 @@ public class Benchmark {
             }
 
             for (int initiatorCount = 0; initiatorCount < initiatorConfig.count(); initiatorCount++) {
-                Initiator initiator = new Initiator(relpClientFactory, delayedStream, socketAddressConfig.hostname(), socketAddressConfig.port(), metricRegistry);
+                Initiator initiator = new Initiator(
+                        relpClientFactory,
+                        delayedStream,
+                        socketAddressConfig.hostname(),
+                        socketAddressConfig.port(),
+                        metricRegistry
+                );
                 executorService.submit(initiator);
                 initiators.add(initiator);
             }
@@ -143,7 +150,7 @@ public class Benchmark {
         }
     }
 
-    public MetricRegistry metricRegistry(){
+    public MetricRegistry metricRegistry() {
         return metricRegistry;
     }
 }
