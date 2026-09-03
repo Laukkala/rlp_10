@@ -21,10 +21,23 @@
     <revision>0.0.1</revision>
     <rlo_14.version>1.0.1</rlo_14.version>
     <rlp_03.version>10.0.0</rlp_03.version>
+    <rlp_01.version>4.1.0</rlp_01.version>
     <sha1></sha1>
     <slf4j.version>2.0.5</slf4j.version>
   </properties>
   <dependencies>
+    <!-- this library -->
+    <dependency>
+      <groupId>com.teragrep</groupId>
+      <artifactId>rlp_01</artifactId>
+      <version>${rlp_01.version}</version> <!-- see github -->
+    </dependency>
+    <!-- for syslog rfc5424 formatting -->
+    <dependency>
+      <groupId>com.cloudbees</groupId>
+      <artifactId>syslog-java-client</artifactId>
+      <version>1.1.7</version>
+    </dependency>
     <!-- Syslog message -->
     <dependency>
       <groupId>com.teragrep</groupId>
@@ -53,6 +66,13 @@
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_03</artifactId>
       <version>${rlp_03.version}</version>
+    </dependency>
+    <!-- tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.9.0</version>
+      <scope>test</scope>
     </dependency>
     <!-- logging -->
     <dependency>
