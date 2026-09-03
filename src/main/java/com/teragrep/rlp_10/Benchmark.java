@@ -45,16 +45,16 @@
  */
 package com.teragrep.rlp_10;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SlidingWindowReservoir;
+import com.codahale.metrics.Timer;
 import com.teragrep.net_01.channel.context.ConnectContextFactory;
 import com.teragrep.net_01.channel.socket.PlainFactory;
 import com.teragrep.net_01.channel.socket.SocketFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.rlp_03.client.RelpClientFactory;
-import com.teragrep.rlp_10.config.DelayConfig;
-import com.teragrep.rlp_10.config.InitiatorConfig;
-import com.teragrep.rlp_10.config.SocketAddressConfig;
-import com.teragrep.rlp_10.config.SyslogConfig;
+import com.teragrep.rlp_10.config.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,17 +62,39 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 public class Benchmark {
 
+    private final MetricRegistry metricRegistry;
+    private final MetricsConfiguration metricsConfiguration;
     private final ExecutorService executorService;
+    private final InitiatorConfig initiatorConfig;
+    private final List<Initiator> initiators;
+
     public Benchmark(){
+        this(new InitiatorConfig(), new MetricsConfiguration());
+    }
+
+    public Benchmark(InitiatorConfig initiatorConfig, MetricsConfiguration metricsConfiguration){
+        this.metricRegistry = new MetricRegistry();
+        this.initiatorConfig = initiatorConfig;
         this.executorService = Executors.newVirtualThreadPerTaskExecutor();
+        this.metricsConfiguration = metricsConfiguration;
+        this.initiators = new ArrayList<>(initiatorConfig.count());
     }
 
     public void startBenchmark() {
         // todo configs
-        InitiatorConfig initiatorConfig = new InitiatorConfig();
-        List<Initiator> initiators = new ArrayList<>(initiatorConfig.count());
+
+        // todo: clean this mess up
+        metricRegistry.counter(name(Benchmark.class, "records"));
+        metricRegistry.counter(name(Benchmark.class, "resends"));
+        metricRegistry.counter(name(Benchmark.class, "connects"));
+        metricRegistry.counter(name(Benchmark.class, "disconnects"));
+        metricRegistry.counter(name(Benchmark.class, "retriedConnects"));
+        metricRegistry.timer(name(Benchmark.class, "sendLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
+        metricRegistry.timer(name(Benchmark.class, "connectLatency"), () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
 
         SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
@@ -107,7 +129,7 @@ public class Benchmark {
             }
 
             for (int initiatorCount = 0; initiatorCount < initiatorConfig.count(); initiatorCount++) {
-                Initiator initiator = new Initiator(relpClientFactory, delayedStream, socketAddressConfig.hostname(), socketAddressConfig.port());
+                Initiator initiator = new Initiator(relpClientFactory, delayedStream, socketAddressConfig.hostname(), socketAddressConfig.port(), metricRegistry);
                 executorService.submit(initiator);
                 initiators.add(initiator);
             }
@@ -119,5 +141,9 @@ public class Benchmark {
         catch (Exception ignored) {
             // todo handle properly
         }
+    }
+
+    public MetricRegistry metricRegistry(){
+        return metricRegistry;
     }
 }

@@ -1,10 +1,13 @@
 package com.teragrep.rlp_10;
 
+import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_03.client.RelpClient;
 import com.teragrep.rlp_03.client.RelpClientFactory;
 import com.teragrep.rlp_03.client.RelpClientImpl;
+import com.teragrep.rlp_03.client.RelpClientStub;
 import com.teragrep.rlp_03.frame.RelpFrame;
 import com.teragrep.rlp_03.frame.RelpFrameFactory;
+import com.teragrep.rlp_10.config.MetricsConfiguration;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -18,21 +21,23 @@ class Initiator implements Runnable {
     private final RelpClientFactory relpClientFactory;
 
     private final RecordStream recordStream;
+    private final MetricRegistry metricRegistry;
     private final String hostname;
     private final int port;
 
     private volatile boolean run = true;
 
     //TODO: All initiators are currently in one eventLoop, allow for multiples.
-    public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream) {
-        this(relpClientFactory, recordStream, "localhost",1601);
+    public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream, MetricRegistry metricRegistry) {
+        this(relpClientFactory, recordStream, "localhost",1601, metricRegistry);
     }
 
-    public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream, String hostName, int port){
+    public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream, String hostName, int port, MetricRegistry metricRegistry){
         this.relpClientFactory = relpClientFactory;
         this.recordStream = recordStream;
         this.hostname = hostName;
         this.port = port;
+        this.metricRegistry = metricRegistry;
     }
 
     @Override
@@ -40,7 +45,7 @@ class Initiator implements Runnable {
         // producer threads
 
         try (
-                RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS)
+                RelpClient relpClient = new MeteredRelpClient(relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS),metricRegistry)
         ) {
             // send open
             CompletableFuture<RelpFrame> open = relpClient

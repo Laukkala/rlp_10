@@ -88,5 +88,6 @@ public class TestServer {
         Assertions.assertDoesNotThrow(()->Thread.sleep(7000));
         Assertions.assertFalse(messageList.isEmpty());
         System.out.println(messageList.size());
+        //TODO: see how we can measure latency
     }
 }
