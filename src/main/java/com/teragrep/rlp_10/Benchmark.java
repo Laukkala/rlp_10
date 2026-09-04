@@ -156,6 +156,12 @@ public class Benchmark {
         }
     }
 
+    public void stopBenchmark(){
+        for (Initiator initiator : initiators){
+            initiator.stop();
+        }
+    }
+
     public MetricRegistry metricRegistry() {
         return metricRegistry;
     }

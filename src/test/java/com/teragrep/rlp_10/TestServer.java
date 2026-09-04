@@ -120,8 +120,9 @@ public class TestServer {
         Assertions.assertDoesNotThrow(() -> new Thread(benchmark::startBenchmark).start());
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         Assertions.assertFalse(messageList.isEmpty());
+        benchmark.stopBenchmark();
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         System.out
-                .println(benchmark.metricRegistry().timer("com.teragrep.rlp_10.Benchmark.connectLatency").getMeanRate());
-        //TODO: see how we can measure latency
+                .println(benchmark.metricRegistry().counter("disconnects").getCount());
     }
 }

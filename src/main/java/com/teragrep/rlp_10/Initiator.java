@@ -46,6 +46,7 @@
 package com.teragrep.rlp_10;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.teragrep.rlp_03.client.RelpClient;
 import com.teragrep.rlp_03.client.RelpClientFactory;
 import com.teragrep.rlp_03.frame.RelpFrame;
@@ -93,34 +94,38 @@ class Initiator implements Runnable {
         // producer threads
 
         try (
-                RelpClient relpClient = new MeteredRelpClient(
-                        relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS),
-                        metricRegistry
-                )
+                RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS);
         ) {
             // send open
-            CompletableFuture<RelpFrame> open = relpClient
-                    .transmit(relpFrameFactory.create("open", "a hallo yo client"));
-
-            open.get();
+            try(Timer.Context timerContext = metricRegistry.timer("connectLatency").time()){
+                CompletableFuture<RelpFrame> open = relpClient
+                        .transmit(relpFrameFactory.create("open", "a hallo yo client"));
+                open.get();
+                metricRegistry.counter("connects").inc();
+            }
 
             while (run) {
 
                 // todo use custom factory instead that takes bytes and not new String
                 // send syslog
-                CompletableFuture<RelpFrame> syslog = relpClient
-                        .transmit(
-                                relpFrameFactory.create("syslog", new String(recordStream.get(), StandardCharsets.UTF_8))
-                        );
 
-                // todo might want to configure multiple per batch and verify with .handleAsync();
-                syslog.get();
+                try(Timer.Context timerContext = metricRegistry.timer("sendLatency").time()) {
+                    CompletableFuture<RelpFrame> syslog = relpClient
+                            .transmit(
+                                    relpFrameFactory.create("syslog", new String(recordStream.get(), StandardCharsets.UTF_8))
+                            );
+
+                    // todo might want to configure multiple per batch and verify with .handleAsync();
+                    metricRegistry.counter("records").inc();
+                    syslog.get();
+                }
 
             }
 
             // send close
             CompletableFuture<RelpFrame> close = relpClient.transmit(relpFrameFactory.create("close", ""));
             close.get();
+            metricRegistry.counter("disconnects").inc();
 
         }
         catch (Exception e) {
