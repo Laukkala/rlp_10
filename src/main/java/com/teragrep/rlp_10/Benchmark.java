@@ -70,6 +70,7 @@ public class Benchmark {
     private final PrometheusConfiguration prometheusConfiguration;
     private final List<Initiator> initiators;
     private final List<MetricsReport> reports;
+
     public Benchmark() {
         this(new InitiatorConfig(), new MetricsConfiguration(), new PrometheusConfiguration());
     }
@@ -136,7 +137,8 @@ public class Benchmark {
                         delayedStream,
                         socketAddressConfig.hostname(),
                         socketAddressConfig.port(),
-                        metricRegistry
+                        metricRegistry,
+                        initiatorConfig.messageCount()
                 );
                 executorService.submit(initiator);
                 initiators.add(initiator);
@@ -149,6 +151,10 @@ public class Benchmark {
         catch (final Exception ignored) {
             // todo handle properly
         }
+    }
+
+    public void join(){
+
     }
 
     public void stopBenchmark(){

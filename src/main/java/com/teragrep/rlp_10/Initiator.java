@@ -67,12 +67,13 @@ class Initiator implements Runnable {
     private final MetricRegistry metricRegistry;
     private final String hostname;
     private final int port;
+    private final int messageCount;
 
     private volatile boolean run = true;
 
     //TODO: All initiators are currently in one eventLoop, allow for multiples.
-    public Initiator(final RelpClientFactory relpClientFactory, final RecordStream recordStream, final MetricRegistry metricRegistry) {
-        this(relpClientFactory, recordStream, "localhost", 1601, metricRegistry);
+    public Initiator(final RelpClientFactory relpClientFactory, final RecordStream recordStream, final MetricRegistry metricRegistry, int messageCount) {
+        this(relpClientFactory, recordStream, "localhost", 1601, metricRegistry, messageCount);
     }
 
     public Initiator(
@@ -80,13 +81,15 @@ class Initiator implements Runnable {
             final RecordStream recordStream,
             final String hostName,
             final int port,
-            final MetricRegistry metricRegistry
+            final MetricRegistry metricRegistry,
+            final int messageCount
     ) {
         this.relpClientFactory = relpClientFactory;
         this.recordStream = recordStream;
         this.hostname = hostName;
         this.port = port;
         this.metricRegistry = metricRegistry;
+        this.messageCount = messageCount;
     }
 
     @Override
@@ -104,7 +107,8 @@ class Initiator implements Runnable {
                 metricRegistry.counter("connects").inc();
             }
 
-            while (run) {
+            int sentMessages = 0;
+            while (run && ++sentMessages <= messageCount) {
 
                 // todo use custom factory instead that takes bytes and not new String
                 // send syslog
@@ -119,7 +123,6 @@ class Initiator implements Runnable {
                     metricRegistry.counter("records").inc();
                     syslog.get();
                 }
-
             }
 
             // send close

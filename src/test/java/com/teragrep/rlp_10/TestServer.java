@@ -114,7 +114,7 @@ public class TestServer {
 
     @Test
     public void testBenchmark() {
-        final InitiatorConfig initiatorConfig = new InitiatorConfig(50);
+        final InitiatorConfig initiatorConfig = new InitiatorConfig(50,250);
         final MetricsConfiguration metricsConfiguration = new MetricsConfiguration(10000,1);
         final PrometheusConfiguration prometheusConfiguration = new PrometheusConfiguration(8080);
         final Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration, prometheusConfiguration);
