@@ -51,6 +51,8 @@ import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.net_01.server.ServerFactory;
+import com.teragrep.rlp_10.config.InitiatorConfig;
+import com.teragrep.rlp_10.config.MetricsConfiguration;
 import com.teragrep.rlp_10.config.SocketAddressConfig;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -112,11 +114,14 @@ public class TestServer {
     @Test
     public void testBenchmark() {
         Assertions.assertTrue(messageList.isEmpty());
-        Benchmark benchmark = new Benchmark();
+        InitiatorConfig initiatorConfig = new InitiatorConfig(50);
+        MetricsConfiguration metricsConfiguration = new MetricsConfiguration();
+        Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration);
         Assertions.assertDoesNotThrow(() -> new Thread(benchmark::startBenchmark).start());
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(7000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         Assertions.assertFalse(messageList.isEmpty());
-        System.out.println(messageList.size());
+        System.out
+                .println(benchmark.metricRegistry().timer("com.teragrep.rlp_10.Benchmark.connectLatency").getMeanRate());
         //TODO: see how we can measure latency
     }
 }

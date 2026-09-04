@@ -53,8 +53,6 @@ import com.teragrep.rlp_03.frame.RelpFrame;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 public class MeteredRelpClient implements RelpClient {
 
     final MetricRegistry metricRegistry;
@@ -67,25 +65,27 @@ public class MeteredRelpClient implements RelpClient {
 
     @Override
     public CompletableFuture<RelpFrame> transmit(final RelpFrame relpFrame) {
+        final CompletableFuture<RelpFrame> rv;
         if (relpFrame.command().toString().equals("open")) {
-            try (final Timer.Context context = metricRegistry.timer(name(Benchmark.class, "connectLatency")).time()) {
-                if (metricRegistry.counter(name(Benchmark.class, "connects")).getCount() == 0) {
-                    metricRegistry.counter(name(Benchmark.class, "connects")).inc();
-                }
-                else {
-                    metricRegistry.counter(name(Benchmark.class, "retriedConnects")).inc();
-                }
-                //TODO: this blocks so its no good
-                origin.transmit(relpFrame).get();
+            try (final Timer.Context context = metricRegistry.timer("connectLatency").time()) {
+                metricRegistry.counter("connects").inc(); // TODO: ConnectLatency already measures count so is connects necessary?
+                rv = origin.transmit(relpFrame);
+                rv.get(); // TODO: think of something else, this blocks
             }
-            catch (ExecutionException | InterruptedException e) {
-                //TODO: error
+            catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
         else {
-            metricRegistry.counter(name(Benchmark.class, "records")).inc();
+            try (final Timer.Context context = metricRegistry.timer("sendLatency").time()) {
+                metricRegistry.counter("records").inc();
+                rv = origin.transmit(relpFrame);
+            }
         }
-        return origin.transmit(relpFrame);
+        return rv;
     }
 
     @Override
