@@ -71,16 +71,16 @@ class Initiator implements Runnable {
     private volatile boolean run = true;
 
     //TODO: All initiators are currently in one eventLoop, allow for multiples.
-    public Initiator(RelpClientFactory relpClientFactory, RecordStream recordStream, MetricRegistry metricRegistry) {
+    public Initiator(final RelpClientFactory relpClientFactory, final RecordStream recordStream, final MetricRegistry metricRegistry) {
         this(relpClientFactory, recordStream, "localhost", 1601, metricRegistry);
     }
 
     public Initiator(
-            RelpClientFactory relpClientFactory,
-            RecordStream recordStream,
-            String hostName,
-            int port,
-            MetricRegistry metricRegistry
+            final RelpClientFactory relpClientFactory,
+            final RecordStream recordStream,
+            final String hostName,
+            final int port,
+            final MetricRegistry metricRegistry
     ) {
         this.relpClientFactory = relpClientFactory;
         this.recordStream = recordStream;
@@ -94,11 +94,11 @@ class Initiator implements Runnable {
         // producer threads
 
         try (
-                RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS);
+                final RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS);
         ) {
             // send open
-            try(Timer.Context timerContext = metricRegistry.timer("connectLatency").time()){
-                CompletableFuture<RelpFrame> open = relpClient
+            try(final Timer.Context timerContext = metricRegistry.timer("connectLatency").time()){
+                final CompletableFuture<RelpFrame> open = relpClient
                         .transmit(relpFrameFactory.create("open", "a hallo yo client"));
                 open.get();
                 metricRegistry.counter("connects").inc();
@@ -109,8 +109,8 @@ class Initiator implements Runnable {
                 // todo use custom factory instead that takes bytes and not new String
                 // send syslog
 
-                try(Timer.Context timerContext = metricRegistry.timer("sendLatency").time()) {
-                    CompletableFuture<RelpFrame> syslog = relpClient
+                try(final Timer.Context timerContext = metricRegistry.timer("sendLatency").time()) {
+                    final CompletableFuture<RelpFrame> syslog = relpClient
                             .transmit(
                                     relpFrameFactory.create("syslog", new String(recordStream.get(), StandardCharsets.UTF_8))
                             );
@@ -123,12 +123,12 @@ class Initiator implements Runnable {
             }
 
             // send close
-            CompletableFuture<RelpFrame> close = relpClient.transmit(relpFrameFactory.create("close", ""));
+            final CompletableFuture<RelpFrame> close = relpClient.transmit(relpFrameFactory.create("close", ""));
             close.get();
             metricRegistry.counter("disconnects").inc();
 
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             // todo log
             System.err.println(e.getMessage());
             run = false;

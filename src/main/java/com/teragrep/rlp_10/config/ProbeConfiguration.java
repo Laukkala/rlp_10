@@ -53,7 +53,7 @@ public class ProbeConfiguration {
         this(1000);
     }
 
-    public ProbeConfiguration(int interval) {
+    public ProbeConfiguration(final int interval) {
         this.interval = interval;
     }
 

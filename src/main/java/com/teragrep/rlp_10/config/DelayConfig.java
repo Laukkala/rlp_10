@@ -55,7 +55,7 @@ public class DelayConfig {
         this(Duration.ZERO);
     }
 
-    public DelayConfig(Duration delay) {
+    public DelayConfig(final Duration delay) {
         this.delay = delay;
     }
 

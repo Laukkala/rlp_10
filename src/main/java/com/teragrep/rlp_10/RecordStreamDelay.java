@@ -52,7 +52,7 @@ class RecordStreamDelay implements RecordStream {
     private final RecordStream recordStream;
     private final long delay;
 
-    public RecordStreamDelay(final long delay, RecordStream recordStream) {
+    public RecordStreamDelay(final long delay, final RecordStream recordStream) {
         this.delay = delay;
         this.recordStream = recordStream;
     }

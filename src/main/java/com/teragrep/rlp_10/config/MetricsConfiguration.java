@@ -46,14 +46,6 @@
 package com.teragrep.rlp_10.config;
 
 import com.codahale.metrics.*;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-
-import java.util.concurrent.TimeUnit;
 
 public class MetricsConfiguration {
 
