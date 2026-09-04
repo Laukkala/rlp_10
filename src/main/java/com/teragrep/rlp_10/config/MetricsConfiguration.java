@@ -46,6 +46,12 @@
 package com.teragrep.rlp_10.config;
 
 import com.codahale.metrics.*;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.MetricsServlet;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +64,7 @@ public class MetricsConfiguration {
         this(10000, 60);
     }
 
-    public MetricsConfiguration(int window, int interval) {
+    public MetricsConfiguration(final int window, final int interval) {
         this.window = window;
         this.interval = interval;
     }
@@ -77,7 +83,7 @@ public class MetricsConfiguration {
      * @return a new MetricRegistry instance
      */
     public MetricRegistry createRegistry(){
-        MetricRegistry metricRegistry = new MetricRegistry();
+        final MetricRegistry metricRegistry = new MetricRegistry();
         metricRegistry.counter("records");
         metricRegistry.counter("resends");
         metricRegistry.counter("connects");
@@ -87,13 +93,5 @@ public class MetricsConfiguration {
         metricRegistry
                 .timer("connectLatency", () -> new Timer(new SlidingWindowReservoir(window())));
         return metricRegistry;
-    }
-
-    public ConsoleReporter createReporter(MetricRegistry metricRegistry){
-        return ConsoleReporter
-                .forRegistry(metricRegistry)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
     }
 }

@@ -58,56 +58,60 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class Benchmark {
 
     private final ExecutorService executorService;
     private final InitiatorConfig initiatorConfig;
     private final MetricsConfiguration metricsConfiguration;
+    private final PrometheusConfiguration prometheusConfiguration;
     private final List<Initiator> initiators;
+    private MetricsReport metricsReport;
 
     public Benchmark() {
-        this(new InitiatorConfig(), new MetricsConfiguration());
+        this(new InitiatorConfig(), new MetricsConfiguration(), new PrometheusConfiguration());
     }
 
-    public Benchmark(InitiatorConfig initiatorConfig,  MetricsConfiguration metricsConfiguration){
+    public Benchmark(final InitiatorConfig initiatorConfig, final MetricsConfiguration metricsConfiguration, final PrometheusConfiguration prometheusConfiguration){
+        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.initiatorConfig = initiatorConfig;
         this.metricsConfiguration = metricsConfiguration;
-        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
+        this.prometheusConfiguration = prometheusConfiguration;
         this.initiators = new ArrayList<>(initiatorConfig.count());
     }
 
     public void startBenchmark() {
         // todo configs
 
-        MetricRegistry metricRegistry = metricsConfiguration.createRegistry();
-        ConsoleReporter reporter = metricsConfiguration.createReporter(metricRegistry);
-        reporter.start(metricsConfiguration.interval(), TimeUnit.SECONDS);
-        SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
+        final MetricRegistry metricRegistry = metricsConfiguration.createRegistry();
+        final SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
+
+        // metrics
+        metricsReport = new MetricsReport(metricRegistry,metricsConfiguration,prometheusConfiguration);
+        metricsReport.start();
 
         // eventloop threads
-        EventLoopFactory eventLoopFactory = new EventLoopFactory();
+        final EventLoopFactory eventLoopFactory = new EventLoopFactory();
         try {
-            EventLoop eventLoop = eventLoopFactory.create();
+            final EventLoop eventLoop = eventLoopFactory.create();
             executorService.submit(eventLoop);
 
-            SocketFactory socketFactory = new PlainFactory();
+            final SocketFactory socketFactory = new PlainFactory();
 
-            ConnectContextFactory connectContextFactory = new ConnectContextFactory(executorService, socketFactory);
+            final ConnectContextFactory connectContextFactory = new ConnectContextFactory(executorService, socketFactory);
 
-            RelpClientFactory relpClientFactory = new RelpClientFactory(connectContextFactory, eventLoop);
+            final RelpClientFactory relpClientFactory = new RelpClientFactory(connectContextFactory, eventLoop);
 
-            SyslogConfig syslogConfig = new SyslogConfig();
+            final SyslogConfig syslogConfig = new SyslogConfig();
 
             // todo use Hostname class from aer_02 or create new component for it
-            RecordStream recordStream = new RecordStreamImpl(
+            final RecordStream recordStream = new RecordStreamImpl(
                     "someOrigin",
                     syslogConfig.hostname(),
                     syslogConfig.appName()
             );
 
-            DelayConfig delayConfig = new DelayConfig();
+            final DelayConfig delayConfig = new DelayConfig();
             final RecordStream delayedStream;
             if (delayConfig.delay() > 0) {
                 delayedStream = new RecordStreamDelay(delayConfig.delay(), recordStream);
@@ -116,8 +120,9 @@ public class Benchmark {
                 delayedStream = recordStream;
             }
 
+
             for (int initiatorCount = 0; initiatorCount < initiatorConfig.count(); initiatorCount++) {
-                Initiator initiator = new Initiator(
+                final Initiator initiator = new Initiator(
                         relpClientFactory,
                         delayedStream,
                         socketAddressConfig.hostname(),
@@ -132,14 +137,15 @@ public class Benchmark {
 
             //LockSupport.parkNanos(Long.MAX_VALUE);
         }
-        catch (Exception ignored) {
+        catch (final Exception ignored) {
             // todo handle properly
         }
     }
 
     public void stopBenchmark(){
-        for (Initiator initiator : initiators){
+        for (final Initiator initiator : initiators){
             initiator.stop();
         }
+        metricsReport.stop();
     }
 }

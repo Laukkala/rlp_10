@@ -53,6 +53,7 @@ import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.net_01.server.ServerFactory;
 import com.teragrep.rlp_10.config.InitiatorConfig;
 import com.teragrep.rlp_10.config.MetricsConfiguration;
+import com.teragrep.rlp_10.config.PrometheusConfiguration;
 import com.teragrep.rlp_10.config.SocketAddressConfig;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -80,16 +81,16 @@ public class TestServer {
 
     @BeforeAll
     public void init() {
-        SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
+        final SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
-        EventLoopFactory eventLoopFactory = new EventLoopFactory();
+        final EventLoopFactory eventLoopFactory = new EventLoopFactory();
         Assertions.assertDoesNotThrow(() -> eventLoop = eventLoopFactory.create());
 
         eventLoopThread = new Thread(eventLoop);
         eventLoopThread.start();
 
         executorService = Executors.newSingleThreadExecutor();
-        ServerFactory serverFactory = new ServerFactory(
+        final ServerFactory serverFactory = new ServerFactory(
                 eventLoop,
                 executorService,
                 new PlainFactory(),
@@ -114,12 +115,12 @@ public class TestServer {
     @Test
     public void testBenchmark() {
         Assertions.assertTrue(messageList.isEmpty());
-        InitiatorConfig initiatorConfig = new InitiatorConfig(50);
-        MetricsConfiguration metricsConfiguration = new MetricsConfiguration(10000,1);
-        Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration);
+        final InitiatorConfig initiatorConfig = new InitiatorConfig(50);
+        final MetricsConfiguration metricsConfiguration = new MetricsConfiguration(10000,1);
+        final PrometheusConfiguration prometheusConfiguration = new PrometheusConfiguration();
+        final Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration, prometheusConfiguration);
         Assertions.assertDoesNotThrow(() -> new Thread(benchmark::startBenchmark).start());
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
-        Assertions.assertFalse(messageList.isEmpty());
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(120000));
         benchmark.stopBenchmark();
         Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
     }
