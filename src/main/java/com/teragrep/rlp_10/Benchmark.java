@@ -53,6 +53,9 @@ import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.rlp_03.client.RelpClientFactory;
 import com.teragrep.rlp_10.config.*;
+import com.teragrep.rlp_10.report.MetricsReport;
+import com.teragrep.rlp_10.report.PrometheusMetricsReport;
+import com.teragrep.rlp_10.report.Slf4JMetricsReport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +69,7 @@ public class Benchmark {
     private final MetricsConfiguration metricsConfiguration;
     private final PrometheusConfiguration prometheusConfiguration;
     private final List<Initiator> initiators;
-    private MetricsReport metricsReport;
-
+    private final List<MetricsReport> reports;
     public Benchmark() {
         this(new InitiatorConfig(), new MetricsConfiguration(), new PrometheusConfiguration());
     }
@@ -78,6 +80,7 @@ public class Benchmark {
         this.metricsConfiguration = metricsConfiguration;
         this.prometheusConfiguration = prometheusConfiguration;
         this.initiators = new ArrayList<>(initiatorConfig.count());
+        this.reports = new ArrayList<>();
     }
 
     public void startBenchmark() {
@@ -86,9 +89,15 @@ public class Benchmark {
         final MetricRegistry metricRegistry = metricsConfiguration.createRegistry();
         final SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
-        // metrics
-        metricsReport = new MetricsReport(metricRegistry,metricsConfiguration,prometheusConfiguration);
-        metricsReport.start();
+        // reports
+        PrometheusMetricsReport prometheusMetricsReport = new PrometheusMetricsReport(metricRegistry,metricsConfiguration,prometheusConfiguration);
+        Slf4JMetricsReport slf4JMetricsReport = new Slf4JMetricsReport(metricRegistry, metricsConfiguration);
+        reports.add(prometheusMetricsReport);
+        reports.add(slf4JMetricsReport);
+
+        for(MetricsReport report : reports){
+            report.start();
+        }
 
         // eventloop threads
         final EventLoopFactory eventLoopFactory = new EventLoopFactory();
@@ -146,6 +155,8 @@ public class Benchmark {
         for (final Initiator initiator : initiators){
             initiator.stop();
         }
-        metricsReport.stop();
+        for (final MetricsReport report : reports){
+            report.stop();
+        }
     }
 }

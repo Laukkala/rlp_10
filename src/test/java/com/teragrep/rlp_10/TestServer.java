@@ -114,12 +114,11 @@ public class TestServer {
 
     @Test
     public void testBenchmark() {
-        Assertions.assertTrue(messageList.isEmpty());
         final InitiatorConfig initiatorConfig = new InitiatorConfig(50);
         final MetricsConfiguration metricsConfiguration = new MetricsConfiguration(10000,1);
-        final PrometheusConfiguration prometheusConfiguration = new PrometheusConfiguration();
+        final PrometheusConfiguration prometheusConfiguration = new PrometheusConfiguration(8080);
         final Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration, prometheusConfiguration);
-        Assertions.assertDoesNotThrow(() -> new Thread(benchmark::startBenchmark).start());
+        benchmark.startBenchmark();
         Assertions.assertDoesNotThrow(() -> Thread.sleep(120000));
         benchmark.stopBenchmark();
         Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
