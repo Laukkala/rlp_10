@@ -45,16 +45,24 @@
  */
 package com.teragrep.rlp_10.config;
 
-public class TimeoutConfig {
+public class TimeoutConfiguration {
 
     private final long openTimeout;
     private final long closeTimeout;
     private final long payloadTimeout;
 
-    public TimeoutConfig(final long openTimeout, final long closeTimeout, final long payloadTimeout) {
+    public TimeoutConfiguration(){
+        this(1,5,2);
+    }
+
+    public TimeoutConfiguration(final long openTimeout, final long closeTimeout, final long payloadTimeout) {
         this.openTimeout = openTimeout;
         this.closeTimeout = closeTimeout;
         this.payloadTimeout = payloadTimeout;
+    }
+
+    public long openTimeout(){
+        return openTimeout;
     }
 
 }

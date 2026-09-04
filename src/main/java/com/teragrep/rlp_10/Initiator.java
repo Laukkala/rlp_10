@@ -45,6 +45,7 @@
  */
 package com.teragrep.rlp_10;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.teragrep.rlp_03.client.RelpClient;
@@ -55,7 +56,9 @@ import com.teragrep.rlp_03.frame.RelpFrameFactory;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class Initiator implements Runnable {
 
@@ -68,12 +71,13 @@ class Initiator implements Runnable {
     private final String hostname;
     private final int port;
     private final int messageCount;
+    private final long openTimeout;
 
     private volatile boolean run = true;
 
     //TODO: All initiators are currently in one eventLoop, allow for multiples.
-    public Initiator(final RelpClientFactory relpClientFactory, final RecordStream recordStream, final MetricRegistry metricRegistry, int messageCount) {
-        this(relpClientFactory, recordStream, "localhost", 1601, metricRegistry, messageCount);
+    public Initiator(final RelpClientFactory relpClientFactory, final RecordStream recordStream, final MetricRegistry metricRegistry, int messageCount, int openTimeout) {
+        this(relpClientFactory, recordStream, "localhost", 1601, metricRegistry, messageCount, openTimeout);
     }
 
     public Initiator(
@@ -82,7 +86,8 @@ class Initiator implements Runnable {
             final String hostName,
             final int port,
             final MetricRegistry metricRegistry,
-            final int messageCount
+            final int messageCount,
+            final long connectTimeout
     ) {
         this.relpClientFactory = relpClientFactory;
         this.recordStream = recordStream;
@@ -90,6 +95,7 @@ class Initiator implements Runnable {
         this.port = port;
         this.metricRegistry = metricRegistry;
         this.messageCount = messageCount;
+        this.openTimeout = connectTimeout;
     }
 
     @Override
@@ -97,14 +103,22 @@ class Initiator implements Runnable {
         // producer threads
 
         try (
-                final RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(1, TimeUnit.SECONDS);
+                final RelpClient relpClient = relpClientFactory.open(new InetSocketAddress(hostname, port)).get(openTimeout, TimeUnit.SECONDS);
         ) {
-            // send open
-            try(final Timer.Context timerContext = metricRegistry.timer("connectLatency").time()){
-                final CompletableFuture<RelpFrame> open = relpClient
-                        .transmit(relpFrameFactory.create("open", "a hallo yo client"));
-                open.get();
-                metricRegistry.counter("connects").inc();
+            Counter connects = metricRegistry.counter("connects");
+            Counter retriedConnects = metricRegistry.counter("retriedConnects");
+
+            // try to connect, retrying until connection is established.
+            // TODO: will this Timer skew connection statistics if a connection fails?
+            try(final Timer.Context timerContext = metricRegistry.timer("connectLatency").time()) {
+                connects.inc();
+                boolean connected = false;
+                while(!connected){
+                    connected = connect(relpClient);
+                    if(!connected){
+                        retriedConnects.inc();
+                    }
+                }
             }
 
             int sentMessages = 0;
@@ -136,6 +150,22 @@ class Initiator implements Runnable {
             System.err.println(e.getMessage());
             run = false;
         }
+    }
+
+    private boolean connect(RelpClient relpClient){
+        final boolean connected;
+        final CompletableFuture<RelpFrame> open = relpClient
+                .transmit(relpFrameFactory.create("open", "a hallo yo client"));
+        try{
+            open.get(openTimeout, TimeUnit.SECONDS);
+            connected = true;
+        } catch (TimeoutException timeoutException){
+            return false;
+        } catch (InterruptedException | ExecutionException exception){
+            //TODO: log and close
+            throw new RuntimeException(exception);
+        }
+        return connected;
     }
 
     public void stop() {

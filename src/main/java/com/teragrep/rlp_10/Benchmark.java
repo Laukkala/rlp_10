@@ -68,18 +68,20 @@ public class Benchmark {
     private final InitiatorConfig initiatorConfig;
     private final MetricsConfiguration metricsConfiguration;
     private final PrometheusConfiguration prometheusConfiguration;
+    private final TimeoutConfiguration timeoutConfiguration;
     private final List<Initiator> initiators;
     private final List<MetricsReport> reports;
 
     public Benchmark() {
-        this(new InitiatorConfig(), new MetricsConfiguration(), new PrometheusConfiguration());
+        this(new InitiatorConfig(), new MetricsConfiguration(), new PrometheusConfiguration(), new TimeoutConfiguration());
     }
 
-    public Benchmark(final InitiatorConfig initiatorConfig, final MetricsConfiguration metricsConfiguration, final PrometheusConfiguration prometheusConfiguration){
+    public Benchmark(final InitiatorConfig initiatorConfig, final MetricsConfiguration metricsConfiguration, final PrometheusConfiguration prometheusConfiguration, final TimeoutConfiguration timeoutConfiguration){
         this.executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.initiatorConfig = initiatorConfig;
         this.metricsConfiguration = metricsConfiguration;
         this.prometheusConfiguration = prometheusConfiguration;
+        this.timeoutConfiguration = timeoutConfiguration;
         this.initiators = new ArrayList<>(initiatorConfig.count());
         this.reports = new ArrayList<>();
     }
@@ -138,7 +140,8 @@ public class Benchmark {
                         socketAddressConfig.hostname(),
                         socketAddressConfig.port(),
                         metricRegistry,
-                        initiatorConfig.messageCount()
+                        initiatorConfig.messageCount(),
+                        timeoutConfiguration.openTimeout()
                 );
                 executorService.submit(initiator);
                 initiators.add(initiator);
