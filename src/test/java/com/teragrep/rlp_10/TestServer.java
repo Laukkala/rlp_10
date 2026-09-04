@@ -115,14 +115,12 @@ public class TestServer {
     public void testBenchmark() {
         Assertions.assertTrue(messageList.isEmpty());
         InitiatorConfig initiatorConfig = new InitiatorConfig(50);
-        MetricsConfiguration metricsConfiguration = new MetricsConfiguration();
+        MetricsConfiguration metricsConfiguration = new MetricsConfiguration(10000,1);
         Benchmark benchmark = new Benchmark(initiatorConfig, metricsConfiguration);
         Assertions.assertDoesNotThrow(() -> new Thread(benchmark::startBenchmark).start());
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         Assertions.assertFalse(messageList.isEmpty());
         benchmark.stopBenchmark();
         Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
-        System.out
-                .println(benchmark.metricRegistry().counter("disconnects").getCount());
     }
 }

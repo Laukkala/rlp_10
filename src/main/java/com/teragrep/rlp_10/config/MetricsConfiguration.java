@@ -45,6 +45,10 @@
  */
 package com.teragrep.rlp_10.config;
 
+import com.codahale.metrics.*;
+
+import java.util.concurrent.TimeUnit;
+
 public class MetricsConfiguration {
 
     private final int window;
@@ -65,5 +69,31 @@ public class MetricsConfiguration {
 
     public int interval() {
         return interval;
+    }
+
+
+    /**
+     * Creates a new MetricRegistry with configured options and predefined counters
+     * @return a new MetricRegistry instance
+     */
+    public MetricRegistry createRegistry(){
+        MetricRegistry metricRegistry = new MetricRegistry();
+        metricRegistry.counter("records");
+        metricRegistry.counter("resends");
+        metricRegistry.counter("connects");
+        metricRegistry.counter("disconnects");
+        metricRegistry.counter("retriedConnects");
+        metricRegistry.timer("sendLatency", () -> new Timer(new SlidingWindowReservoir(window())));
+        metricRegistry
+                .timer("connectLatency", () -> new Timer(new SlidingWindowReservoir(window())));
+        return metricRegistry;
+    }
+
+    public ConsoleReporter createReporter(MetricRegistry metricRegistry){
+        return ConsoleReporter
+                .forRegistry(metricRegistry)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
     }
 }

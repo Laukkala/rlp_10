@@ -45,10 +45,7 @@
  */
 package com.teragrep.rlp_10;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SlidingWindowReservoir;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.*;
 import com.teragrep.net_01.channel.context.ConnectContextFactory;
 import com.teragrep.net_01.channel.socket.PlainFactory;
 import com.teragrep.net_01.channel.socket.SocketFactory;
@@ -65,44 +62,28 @@ import java.util.concurrent.TimeUnit;
 
 public class Benchmark {
 
-    private final MetricRegistry metricRegistry;
-    private final MetricsConfiguration metricsConfiguration;
     private final ExecutorService executorService;
     private final InitiatorConfig initiatorConfig;
+    private final MetricsConfiguration metricsConfiguration;
     private final List<Initiator> initiators;
-    private final ConsoleReporter reporter; // TODO: replace wtih http reporter
 
     public Benchmark() {
         this(new InitiatorConfig(), new MetricsConfiguration());
     }
 
-    public Benchmark(InitiatorConfig initiatorConfig, MetricsConfiguration metricsConfiguration) {
-        this.metricRegistry = new MetricRegistry();
+    public Benchmark(InitiatorConfig initiatorConfig,  MetricsConfiguration metricsConfiguration){
         this.initiatorConfig = initiatorConfig;
-        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.metricsConfiguration = metricsConfiguration;
+        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.initiators = new ArrayList<>(initiatorConfig.count());
-        this.reporter = ConsoleReporter
-                .forRegistry(metricRegistry)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
     }
 
     public void startBenchmark() {
         // todo configs
 
-        // todo: clean this mess up
-        metricRegistry.counter("records");
-        metricRegistry.counter("resends");
-        metricRegistry.counter("connects");
-        metricRegistry.counter("disconnects");
-        metricRegistry.counter("retriedConnects");
-        metricRegistry.timer("sendLatency", () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
-        metricRegistry
-                .timer("connectLatency", () -> new Timer(new SlidingWindowReservoir(metricsConfiguration.window())));
-
-        reporter.start(1, TimeUnit.SECONDS);
+        MetricRegistry metricRegistry = metricsConfiguration.createRegistry();
+        ConsoleReporter reporter = metricsConfiguration.createReporter(metricRegistry);
+        reporter.start(metricsConfiguration.interval(), TimeUnit.SECONDS);
         SocketAddressConfig socketAddressConfig = new SocketAddressConfig();
 
         // eventloop threads
@@ -160,9 +141,5 @@ public class Benchmark {
         for (Initiator initiator : initiators){
             initiator.stop();
         }
-    }
-
-    public MetricRegistry metricRegistry() {
-        return metricRegistry;
     }
 }
