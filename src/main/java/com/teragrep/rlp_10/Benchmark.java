@@ -239,7 +239,7 @@ public class Benchmark implements Callable<Long> {
             for (final Initiator initiator : initiators) {
                 initiator.stop();
             }
-            eventLoop.close();
+            eventLoop.stop(); // do not close, stop it, it's automatic due to a "feature" https://github.com/teragrep/net_01/issues/30
         }
 
         for (final MetricsReport report : reports) {
