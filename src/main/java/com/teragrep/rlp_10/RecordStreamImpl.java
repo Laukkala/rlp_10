@@ -53,29 +53,26 @@ import jakarta.json.JsonObject;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 class RecordStreamImpl implements RecordStream {
 
     private final String origin;
     private final String hostname;
     private final String appname;
-    private final long records;
-    private final AtomicInteger sent;
+    private final AtomicLong recordsLeft;
 
     public RecordStreamImpl(final String origin, final String hostname, final String appname, final long records) {
         this.origin = origin;
         this.hostname = hostname;
         this.appname = appname;
-        this.records = records;
-        this.sent = new AtomicInteger(0);
+        this.recordsLeft = new AtomicLong(records);
     }
 
     @Override
     public byte[] get() {
         final byte[] rv;
-        if (sent.get() < records) {
-            sent.incrementAndGet();
+        if (recordsLeft.decrementAndGet() >= 0) {
             final Instant timestamp = Instant.now();
             final String timestampString = timestamp.getEpochSecond() + "." + timestamp.getNano();
             final JsonObject record = Json

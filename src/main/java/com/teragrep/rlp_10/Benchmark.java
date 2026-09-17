@@ -72,13 +72,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
-public class Benchmark {
+/**
+ * Benchmark tests a relp endpoint
+ */
+public class Benchmark implements Callable<Long> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Benchmark.class);
     private final ExecutorService executorService;
@@ -94,7 +94,7 @@ public class Benchmark {
     private final SyslogConfig syslogConfig;
     private final Map<EventLoop, List<Initiator>> eventLoops;
     private final List<MetricsReport> reports;
-    private final List<Future> executorTasks;
+    private final List<Future<Long>> executorTasks;
 
     public Benchmark() {
         this(
@@ -139,7 +139,7 @@ public class Benchmark {
         this.executorTasks = new ArrayList<>();
     }
 
-    public void startBenchmark() {
+    public Long call() {
         // todo configs
 
         final Metrics metrics = new Metrics(metricsConfig);
@@ -150,8 +150,8 @@ public class Benchmark {
                 prometheusConfig
         );
         final Slf4JMetricsReport slf4JMetricsReport = new Slf4JMetricsReport(metrics.registry(), reportConfig);
-        reports.add(prometheusMetricsReport);
-        reports.add(slf4JMetricsReport);
+        //reports.add(prometheusMetricsReport);
+        //reports.add(slf4JMetricsReport);
 
         for (final MetricsReport report : reports) {
             report.start();
@@ -217,19 +217,21 @@ public class Benchmark {
             Runtime.getRuntime().addShutdownHook(shutdownHook);
 
             // block until each task is complete
-            for (final Future task : executorTasks) {
-                task.get();
+            long totalRecords = 0;
+            for (final Future<Long> task : executorTasks) {
+                long taskRecords = task.get();
+                totalRecords += taskRecords;
             }
             stopBenchmark();
+            return totalRecords;
         }
         catch (final InterruptedException | ExecutionException | IOException e) {
             // unrecoverable exceptions
             throw new RuntimeException(e);
         }
-
     }
 
-    public void stopBenchmark() {
+    private void stopBenchmark() {
         for (final Map.Entry<EventLoop, List<Initiator>> entry : eventLoops.entrySet()) {
             final List<Initiator> initiators = entry.getValue();
             final EventLoop eventLoop = entry.getKey();
@@ -237,17 +239,6 @@ public class Benchmark {
             for (final Initiator initiator : initiators) {
                 initiator.stop();
             }
-            // block until every initiator has finished executing
-            for (final Future task : executorTasks) {
-                try {
-                    task.get();
-                }
-                catch (final InterruptedException | ExecutionException exception) {
-                    // unrecoverable exception, log but continue closing other tasks
-                    LOGGER.error("Failed to close Initiator task!", exception);
-                }
-            }
-            // close eventloop once everything is done.
             eventLoop.close();
         }
 
@@ -257,6 +248,10 @@ public class Benchmark {
         executorService.shutdown();
     }
 
+    /**
+     * A method that produces {@link SocketFactory}
+     * @return
+     */
     private SocketFactory createSocketFactory() {
         final SocketFactory rv;
         if (!transportConfig.tls()) {

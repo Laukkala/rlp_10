@@ -130,10 +130,10 @@ public class BenchmarkTest {
     @Test
     public void testMessageCount() {
         final int clients = 123;
-        final long messageCount = 100000;
+        final long messageCount = 1000000;
         final int retryTransmissionCount = 3;
         final int retryConnectionCount = 3;
-        final int eventLoopCount = 19;
+        final int eventLoopCount = 190;
         final InitiatorConfig initiatorConfig = new InitiatorConfig(
                 clients,
                 retryTransmissionCount,
@@ -153,7 +153,8 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-        benchmark.startBenchmark();
+
+        Assertions.assertEquals(messageCount, benchmark.call());
         Assertions.assertFalse(messageList.isEmpty());
         Assertions.assertEquals(messageCount, messageList.size());
     }
@@ -163,7 +164,7 @@ public class BenchmarkTest {
      */
     @Test
     public void testFewerClientsThanEventLoops() {
-        final int clients = 5;
+        final int clients = 50;
         final long messageCount = 5000;
         final int retryTransmissionCount = 3;
         final int retryConnectionCount = 3;
@@ -187,7 +188,8 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-        benchmark.startBenchmark();
+
+        Assertions.assertEquals(messageCount, benchmark.call());
         Assertions.assertFalse(messageList.isEmpty());
         Assertions.assertEquals(messageCount, messageList.size());
     }
@@ -221,7 +223,7 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-        benchmark.startBenchmark();
+        benchmark.call();
         Assertions.assertTrue(messageList.isEmpty());
     }
 
@@ -251,7 +253,7 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-        final Thread benchMarkThread = new Thread(() -> benchmark.startBenchmark());
+        final Thread benchMarkThread = new Thread(benchmark::call);
         benchMarkThread.start();
         final HttpClient client = HttpClient.newHttpClient();
         final int prometheusPort = Assertions.assertDoesNotThrow(() -> prometheusConfiguration.port());

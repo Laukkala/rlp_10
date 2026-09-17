@@ -57,12 +57,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-class Initiator implements Runnable {
+class Initiator implements Callable<Long> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Initiator.class);
     private static final RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
@@ -77,6 +75,7 @@ class Initiator implements Runnable {
     private final int retryConnectCount;
 
     private volatile boolean run = true;
+    private final AtomicLong recordsSent;
 
     public Initiator(
             final RelpClientFactory relpClientFactory,
@@ -120,10 +119,11 @@ class Initiator implements Runnable {
         this.payloadTimeout = payloadTimeout;
         this.retryTransmissionCount = retryTransmissionCount;
         this.retryConnectCount = retryConnectCount;
+        this.recordsSent = new AtomicLong(); // todo move
     }
 
     @Override
-    public void run() {
+    public Long call() {
         // producer threads
         try (final RelpClient relpClient = connect(retryConnectCount)) {
             if (!relpClient.isStub()) {
@@ -139,16 +139,13 @@ class Initiator implements Runnable {
             }
         }
         catch (final TransmissionException transmissionException) {
-            stop();
             LOGGER.error("Initiator failed to transmit data to server!", transmissionException);
+            stop();
         }
         catch (final ExecutionException | InterruptedException exception) {
             LOGGER.error("Initiator encountered an unrecoverable error: ", exception);
         }
-        finally {
-            return;
-        }
-
+        return recordsSent.get();
     }
 
     private RelpClient connect(final int retryCount) throws InterruptedException, ExecutionException {
@@ -210,7 +207,7 @@ class Initiator implements Runnable {
                 transmitTimer.close();
                 receiveTimer = metrics.receiveLatency().time();
                 syslog.get(payloadTimeout, TimeUnit.SECONDS);
-
+                recordsSent.incrementAndGet();
                 // Whole transaction is complete as soon as Future received by transmit() is completed (or times out).
                 receiveTimer.close();
                 transactionTimer.close();

@@ -15,11 +15,17 @@
 
 == How to compile
 
-`mvn clean package`
+[source,bash]
+----
+mvn clean package
+----
 
 == How to run
 
-`java -jar rlp_10.jar`
+[source,bash]
+----
+java -jar rlp_10.jar
+----
 
 == Configurations
 
