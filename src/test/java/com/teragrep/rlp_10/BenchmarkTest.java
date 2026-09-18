@@ -60,10 +60,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * These are a copy from rlp_03 test suite
@@ -89,7 +87,7 @@ public class BenchmarkTest {
     private final DelayConfig delayConfig = new DelayConfig();
     private final SyslogConfig syslogConfig = new SyslogConfig();
 
-    private final List<byte[]> messageList = new LinkedList<>();
+    private final ConcurrentLinkedDeque<byte[]> messageList = new ConcurrentLinkedDeque<>();
 
     @BeforeAll
     public void init() {
@@ -153,7 +151,6 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-
         Assertions.assertEquals(messageCount, benchmark.call());
         Assertions.assertFalse(messageList.isEmpty());
         Assertions.assertEquals(messageCount, messageList.size());
@@ -164,7 +161,7 @@ public class BenchmarkTest {
      */
     @Test
     public void testFewerClientsThanEventLoops() {
-        final int clients = 50;
+        final int clients = 5;
         final long messageCount = 5000;
         final int retryTransmissionCount = 3;
         final int retryConnectionCount = 3;
@@ -253,8 +250,10 @@ public class BenchmarkTest {
                 delayConfig,
                 syslogConfig
         );
-        final Thread benchMarkThread = new Thread(benchmark::call);
-        benchMarkThread.start();
+
+        final ExecutorService forkJoinPool = ForkJoinPool.commonPool();
+        Future<Long> clientRecords = forkJoinPool.submit(benchmark);
+
         final HttpClient client = HttpClient.newHttpClient();
         final int prometheusPort = Assertions.assertDoesNotThrow(() -> prometheusConfiguration.port());
         final HttpRequest request = HttpRequest
@@ -267,7 +266,13 @@ public class BenchmarkTest {
         final HttpResponse<String> response = Assertions
                 .assertDoesNotThrow(() -> client.send(request, HttpResponse.BodyHandlers.ofString()));
 
-        Assertions.assertDoesNotThrow(() -> benchMarkThread.join());
+        AtomicLong recordsSent = new AtomicLong();
+        Assertions.assertDoesNotThrow(() -> {
+            Long records = clientRecords.get();
+            recordsSent.set(records);
+        });
+        Assertions.assertEquals(messageCount, recordsSent.get());
+
         client.close();
         // assert that HTTP response contains information about each metric in prometheus format
         Assertions

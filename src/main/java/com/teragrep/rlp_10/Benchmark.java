@@ -150,8 +150,8 @@ public class Benchmark implements Callable<Long> {
                 prometheusConfig
         );
         final Slf4JMetricsReport slf4JMetricsReport = new Slf4JMetricsReport(metrics.registry(), reportConfig);
-        //reports.add(prometheusMetricsReport);
-        //reports.add(slf4JMetricsReport);
+        reports.add(prometheusMetricsReport);
+        reports.add(slf4JMetricsReport);
 
         for (final MetricsReport report : reports) {
             report.start();
@@ -245,11 +245,13 @@ public class Benchmark implements Callable<Long> {
         for (final MetricsReport report : reports) {
             report.stop();
         }
+
         executorService.shutdown();
     }
 
     /**
      * A method that produces {@link SocketFactory}
+     * 
      * @return
      */
     private SocketFactory createSocketFactory() {
