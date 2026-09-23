@@ -99,6 +99,12 @@
       <version>${log4j2.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <version>2.26.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
@@ -255,6 +261,8 @@
             <exclude>src/test/resources/tls/**</exclude>
             <!-- spotbugs filter -->
             <exclude>spotbugs-exclude-filter.xml</exclude>
+            <!-- logging configuration -->
+            <exclude>src/test/resources/log4j2.xml</exclude>
           </excludes>
         </configuration>
         <executions>
