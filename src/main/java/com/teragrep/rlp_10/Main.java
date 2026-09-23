@@ -84,7 +84,8 @@ public final class Main {
                     configFactory.delayConfig(),
                     configFactory.syslogConfig()
             );
-            benchmark.call();
+            long recordsSent = benchmark.call();
+            System.out.println(recordsSent);
         }
         catch (final ConfigurationException configurationException) {
             LOGGER.error("Invalid configuration!", configurationException);
