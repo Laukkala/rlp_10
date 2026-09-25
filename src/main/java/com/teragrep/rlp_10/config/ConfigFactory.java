@@ -182,8 +182,8 @@ public final class ConfigFactory {
     }
 
     public TimeoutConfig timeoutConfig() throws ConfigurationException {
-        final String configuredOpenTimeout = configValues.getOrDefault("timeout.open", "10");
-        final String configuredPayloadTimeout = configValues.getOrDefault("timeout.payload", "5");
+        final String configuredOpenTimeout = configValues.getOrDefault("timeout.open", "1000");
+        final String configuredPayloadTimeout = configValues.getOrDefault("timeout.payload", "5000");
         try {
             final long openTimeout = Long.parseLong(configuredOpenTimeout);
             final long payloadTimeout = Long.parseLong(configuredPayloadTimeout);

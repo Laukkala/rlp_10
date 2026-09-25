@@ -53,7 +53,7 @@ public final class TimeoutConfig {
     private final long payloadTimeout;
 
     public TimeoutConfig() {
-        this(10, 5);
+        this(10000, 5000);
     }
 
     public TimeoutConfig(final long openTimeout, final long payloadTimeout) {

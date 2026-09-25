@@ -112,7 +112,7 @@ public final class ConfigFactoryTest {
         configMap.put("report.interval", "60000");
         configMap.put("socket.hostname", "127.0.0.1");
         configMap.put("syslog.appname", "testApp");
-        configMap.put("timeout.open", "1");
+        configMap.put("timeout.open", "2000");
         configMap.put("transport.tls", "true");
         final ConfigFactory configFactory = new ConfigFactory(configMap);
 
@@ -146,8 +146,8 @@ public final class ConfigFactoryTest {
         Assertions.assertEquals(1601, socketAddressConfig.port());
         Assertions.assertEquals("testApp", syslogConfig.appName());
         Assertions.assertEquals("localhost", syslogConfig.hostname());
-        Assertions.assertEquals(1, timeoutConfig.openTimeout());
-        Assertions.assertEquals(5, timeoutConfig.payloadTimeout());
+        Assertions.assertEquals(2000, timeoutConfig.openTimeout());
+        Assertions.assertEquals(5000, timeoutConfig.payloadTimeout());
         Assertions.assertEquals(true, transportConfig.tls());
         Assertions.assertEquals("changeit", transportConfig.keyStorePassword());
         Assertions.assertEquals("changeit", transportConfig.trustStorePassword());

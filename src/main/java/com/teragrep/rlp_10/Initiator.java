@@ -147,11 +147,11 @@ public final class Initiator implements Callable<Long> {
     private RelpClient connect() throws InterruptedException, ExecutionException, TimeoutException {
         final RelpClient relpClient = relpClientFactory
                 .open(new InetSocketAddress(hostname, port))
-                .get(openTimeout, TimeUnit.SECONDS);
+                .get(openTimeout, TimeUnit.MILLISECONDS);
 
         final RelpFrame openFrame = relpFrameFactory.create("open", "a hallo yo client");
         final CompletableFuture<RelpFrame> open = relpClient.transmit(openFrame);
-        open.get(openTimeout, TimeUnit.SECONDS);
+        open.get(openTimeout, TimeUnit.MILLISECONDS);
         return relpClient;
     }
 
@@ -183,7 +183,7 @@ public final class Initiator implements Callable<Long> {
                 // Transmission is complete as soon as relpClient.transmit() finishes.
                 transmitTimer.close();
                 receiveTimer = metrics.receiveLatency().time();
-                syslog.get(payloadTimeout, TimeUnit.SECONDS);
+                syslog.get(payloadTimeout, TimeUnit.MILLISECONDS);
                 recordsSent.incrementAndGet();
                 // Whole transaction is complete as soon as Future received by transmit() is completed (or times out).
                 receiveTimer.close();
@@ -197,7 +197,7 @@ public final class Initiator implements Callable<Long> {
             }
         }
         catch (final TimeoutException timeoutException) {
-            LOGGER.warn("Send syslog attempt timeout after {} seconds!", payloadTimeout);
+            LOGGER.warn("Send syslog attempt timeout after {} milliseconds!", payloadTimeout);
             return false;
         }
     }
